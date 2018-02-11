@@ -6,8 +6,10 @@
 #include<time.h>
 #include<netinet/in.h>
 #include "rsa_secrets.h"
+#include<math.h>
 
-enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12};
+
+enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
 
 enum message_type type;
 
@@ -34,11 +36,33 @@ typedef struct handshake{
 }handshake;
 
 
+typedef struct user{
+	char username[20];
+	char password[20];
+	long int sessionToken;
+	int privLevel;
+}user;
+
+
+
 typedef struct enc_msg{
 
 	double enc;
+	double e;
 
 }enc_msg;
+
+
+handshake create_handshakeDE(){
+	handshake hs;
+	type= SIP;
+	hs.protocol_v=type;	//Syscall Interfacing Protocol
+	type= SYMMETRIC;
+	hs.cipher_suite=type;
+	type= DE;
+	hs.algorithm=type;
+	return hs;
+}
 
 
 handshake create_handshake(){
@@ -83,21 +107,21 @@ int main(){
 		error("Error Connecting to server\n");
 
 
-	char buffer[256];
+	char buffer[256], sessionToken[20];
 	struct test t;
 	struct message m,m2;
 	handshake fhs;
 	struct keys k;
 	int counter=0;
 	int bytes=0, contFlag=0;
-
-	enc_msg *em;
+	user u;
+	enc_msg *em, dm;
 
 	l:
 
-	switch(counter){
+//	switch(counter){
 
-	case 0 :  //SIP handshake
+//	case 0 :  //SIP handshake
 
 		type=HANDSHAKE;	
 		m.type=type;
@@ -118,9 +142,9 @@ int main(){
 			if(m.type==type)
 				contFlag=1;
 		}
-		break;
+//		break;
 	
-	case 1:
+//	case 1:
 		
 		type=RES_CERTIFICATE;
 		m.type=type;
@@ -143,9 +167,9 @@ int main(){
 			}
 		}
 		
-	break;
+//	break;
 
-	case 2:
+//	case 2:
 
 		
 		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
@@ -161,33 +185,93 @@ int main(){
 			int k = 2;  // A constant value
 			double d = (1 + (k*phi))/em->e;
  
-			double m = pow(c, d);
-			m = fmod(m, n);
+			double md = pow(em->enc, d);
+			
+			md = fmod(md, n);
+			printf("\nd: %lf\ne= %lf\nenc_msg %lf\n", d, em->e, em->enc);
 			
 			type= DECR_MSG;
 			m.type=type;
-
-			memcpy((void*)m.payload, (void*)&k, sizeof(k));	
+			
+			dm.enc=md;
+			printf("md = %lf", md);
+			memcpy(m.payload, (void*)&dm, sizeof(dm));	
 			memcpy(buffer, (void*)&m, sizeof(m));	
 
 			if((bytes= send(sockid, buffer, 36, 0))>0);
 				//printf("bytes sent %d",bytes);
-		}
-		
-		
+		}		
 
-		break;		
+//		break;		
 
-	case 3:
+//	case 3:
 	
+		type=CONN_AUTH_SUCCESS;
+		
+		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
+			if(m.type==type){			
+				//printf("bytes recv %d",bytes);
+				printf("\nServer: %s", m.payload);
+			}
+		}
+
+//	case 4:
+		type= USER_INFO;
+		m.type=type;
+
+		scanf("%s",u.username);
+		scanf("%s",u.password);
+		if(!(strcmp(u.username, "user")))
+			u.privLevel=0;
+		memcpy(m.payload, (void*)&u, sizeof(u));	
+		memcpy(buffer, (void*)&m, sizeof(m));	
+
+		if((bytes= send(sockid, buffer, 36, 0))>0);
+		
+		type=SESSION_TOKEN_SENT;
+		
+		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
+			if(m.type==type){			
+				//printf("bytes recv %d",bytes);
+				printf("\nServer: %s", m.payload);
+				strcpy(sessionToken, m.payload);
+				contFlag=1;
+			}
+		}
+
+//	case 5:
+		type=HANDSHAKE;	
+		m.type=type;
+		fhs= create_handshakeDE();
+
+		memcpy((void*)m.payload, (void*)&fhs, sizeof(fhs));	
+		memcpy(buffer, (void*)&m, sizeof(m));	
+
+		if((bytes= send(sockid, buffer, 36, 0))>0);
+			//printf("bytes sent %d",bytes);
+	
+		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
+			//printf("bytes recv %d",bytes);
+			printf("\nServer: %s", m.payload);
+
+			type= OK;
+
+			if(m.type==type)
+				contFlag=1;
+		}
 
 
 
 
-	}	
-	counter++;
 
-	goto l;	
+
+
+
+
+//	}	
+//	counter++;
+
+//	goto l;	
 
 	close(sockid);
 }

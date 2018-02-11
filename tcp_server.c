@@ -22,9 +22,8 @@ int gcd(int a, int h)
         h = temp;
     }
 }
- 
 
-enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12};
+enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
 
 enum message_type type;
 
@@ -36,7 +35,17 @@ struct test{
 struct message{
 	int type;
 	char payload[30];
+	char sessionToken[30];
 };
+
+
+typedef struct user{
+	char username[20];
+	char password[20];
+	long int sessionToken;
+	int privLevel;
+}user;
+
 
 typedef struct handshake{
 	long int num;
@@ -109,15 +118,15 @@ int main(){
 	int counter=0;
 	int bytes=0;
 	int contFlag=0;
-	enc_msg em;
-
-	double c,e=2.0, msg=20.0,n,phi;
+	enc_msg em, *dm;
+	user *u;
+	double c,e=2.0, msg=12.0,n,phi;
 
 	l:	
 
-	switch(counter){		
+//	switch(counter){		
 
-	case 0:		
+//	case 0:		
 		if((bytes= recv(sd2, (char*)&m, sizeof(m), 0))>0){
 			fhs=(handshake*)m.payload;
 			printf("\nBytes %d\nprotocol: %d\ncipher_suite : %d\nAlgorithm %d\n",bytes, fhs->protocol_v, fhs->cipher_suite, fhs->algorithm);	
@@ -134,9 +143,9 @@ int main(){
 			if((bytes= send(sd2, buffer, 36, 0))>0);
 				//printf("bytes sent %d", bytes);
 		}
-		break;
+//		break;
 
-	case 1:
+//	case 1:
 		type=RES_CERTIFICATE;		
 		m.type=type;
 		
@@ -158,9 +167,9 @@ int main(){
 
 		}
 
-		break;
+//		break;
 	
-	case 3:
+//	case 3:
 		//send the encrypted data
 
 			type=ENC_MSG;
@@ -188,9 +197,9 @@ int main(){
 			memcpy(buffer, (void*)&m, sizeof(m));
 			if((bytes= send(sd2, buffer, 36, 0))>0);
 				//printf("bytes sent %d", bytes);
-			break;
+//			break;
 
-	case 4:
+//	case 4:
 
 		type=DECR_MSG;		
 		m.type=type;
@@ -200,25 +209,75 @@ int main(){
 			if(type==m.type)
 				contFlag=1;
 			
-			if(dm==msg){
+			if(dm->enc==msg){
 
-			type=CONN_AUTH_SUCCESS;
+				type=CONN_AUTH_SUCCESS;
+				m.type=type;
+
+				strcpy(m.payload, "AUTH Success");
+
+				memcpy(buffer, (void*)&m, sizeof(m));
+
+				if((bytes= send(sd2, buffer, 36, 0))>0);
+					//printf("bytes sent %d", bytes);
+			}
+		}
+
+		
+
+		type= USER_INFO;
+		m.type= type;
+
+
+		if((bytes=recv(sd2, (char*)&m, sizeof(m), 0))>0){
+			u=(user*)m.payload;
+			if(type==m.type)
+				contFlag=1;
+			
+			if(u->privLevel==1){
+				//write to a file to carry out commands as admin
+			}
+
+			type=SESSION_TOKEN_SENT;
 			m.type=type;
 
-			strcpy(m.payload, "AUTH Success");
+			strcpy(m.payload, "SecretTokenUser");
 
 			memcpy(buffer, (void*)&m, sizeof(m));
 
 			if((bytes= send(sd2, buffer, 36, 0))>0);
 				//printf("bytes sent %d", bytes);
-			}
-		break;
+		}
 
-	}
 
-	counter++;
 
-	goto l;
+
+//	case 
+
+		if((bytes= recv(sd2, (char*)&m, sizeof(m), 0))>0){
+			fhs=(handshake*)m.payload;
+			printf("\nBytes %d\nprotocol: %d\ncipher_suite : %d\nAlgorithm %d\n",bytes, fhs->protocol_v, fhs->cipher_suite, fhs->algorithm);	
+		}
+
+		type=DE;		
+
+		if(fhs->algorithm==type){
+
+			m.type=OK;
+			strcpy(m.payload, "Into the DE en&de mode $");
+
+			memcpy(buffer, (void*)&m, sizeof(m));
+			if((bytes= send(sd2, buffer, 36, 0))>0);
+				//printf("bytes sent %d", bytes);
+		}
+
+
+//		break;
+
+
+//	counter++;
+
+//	goto l;
 	
 	close(sockid);
 	close(sd2);	
