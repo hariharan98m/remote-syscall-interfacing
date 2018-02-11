@@ -1,5 +1,5 @@
-const int p= 59;
-const int q =61;
+const double p= 59;
+const double q =61;
 
 #define n p*q
 

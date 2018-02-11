@@ -5,8 +5,26 @@
 #include<sys/socket.h>
 #include<time.h>
 #include<netinet/in.h>
+#include<math.h>
 
-enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8};
+double e=2;
+ 
+// Returns gcd of a and b
+int gcd(int a, int h)
+{
+    int temp;
+    while (1)
+    {
+        temp = a%h;
+        if (temp == 0)
+          return h;
+        a = h;
+        h = temp;
+    }
+}
+ 
+
+enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12};
 
 enum message_type type;
 
@@ -26,6 +44,21 @@ typedef struct handshake{
 	int cipher_suite;
 	int algorithm;
 }handshake;
+
+
+typedef struct enc_msg{
+
+	double enc;
+	double e;
+
+}enc_msg;
+
+
+struct keys{
+	double N;
+	double PHI;
+};
+
 
 void error(const char* err){
 	printf("%s", err);
@@ -72,12 +105,22 @@ int main(){
 	struct message m;
 //	struct test *t;
 	struct handshake *fhs;
+	struct keys *k;
+	int counter=0;
+	int bytes=0;
+	int contFlag=0;
+	enc_msg em;
+
+	double c,e=2.0, msg=20.0,n,phi;
 
 	l:	
-		
-		if(recv(sd2, (char*)&m, sizeof(m), 0)){
+
+	switch(counter){		
+
+	case 0:		
+		if((bytes= recv(sd2, (char*)&m, sizeof(m), 0))>0){
 			fhs=(handshake*)m.payload;
-			printf("\nprotocol: %d\ncipher_suite : %d\nAlgorithm %d\n",fhs->protocol_v, fhs->cipher_suite, fhs->algorithm);	
+			printf("\nBytes %d\nprotocol: %d\ncipher_suite : %d\nAlgorithm %d\n",bytes, fhs->protocol_v, fhs->cipher_suite, fhs->algorithm);	
 		}
 
 		type=RSA;		
@@ -88,15 +131,95 @@ int main(){
 			strcpy(m.payload, "Client accepted");
 
 			memcpy(buffer, (void*)&m, sizeof(m));
-			if(send(sd2, buffer, sizeof(buffer), 0)>0)
-				;
+			if((bytes= send(sd2, buffer, 36, 0))>0);
+				//printf("bytes sent %d", bytes);
+		}
+		break;
+
+	case 1:
+		type=RES_CERTIFICATE;		
+		m.type=type;
+		
+		if((bytes=recv(sd2, (char*)&m, sizeof(m), 0))>0){
+			k=(struct keys*)m.payload;
+			if(type==m.type)
+				contFlag=1;
+			printf("\nBYTES %d\nN: %lf\nPHI : %lf\n",bytes, k->N, k->PHI);	
+			n=k->N;
+			phi=k->PHI;
+			type=KEYS_SAVED;
+			m.type=type;
+
+			strcpy(m.payload, "Key Saved");
+
+			memcpy(buffer, (void*)&m, sizeof(m));
+			if((bytes= send(sd2, buffer, 36, 0))>0);
+				//printf("bytes sent %d", bytes);
+
 		}
 
-		if(recv(sd2, (char*)&m, sizeof(m), 0)){
-			fhs=(handshake*)m.payload;
-			printf("\nprotocol: %d\ncipher_suite : %d\nAlgorithm %d\n",fhs->protocol_v, fhs->cipher_suite, fhs->algorithm);	
-		}
-				
+		break;
+	
+	case 3:
+		//send the encrypted data
+
+			type=ENC_MSG;
+			m.type=type;
+
+			while (e < phi)
+			    {
+				// e must be co-prime to phi and
+				// smaller than phi.
+				if (gcd(e, phi)==1)
+				    break;
+				else
+				    e++;
+			    }
+
+			c = pow(msg, e);
+			//printf("c after pow %lf", c);
+			c = fmod(c,n);
+			//printf("c after fmod %lf", c);
+
+			em.enc=c;
+			em.e=e;
+
+			memcpy(m.payload, (void*)&em, sizeof(em));			
+			memcpy(buffer, (void*)&m, sizeof(m));
+			if((bytes= send(sd2, buffer, 36, 0))>0);
+				//printf("bytes sent %d", bytes);
+			break;
+
+	case 4:
+
+		type=DECR_MSG;		
+		m.type=type;
+		
+		if((bytes=recv(sd2, (char*)&m, sizeof(m), 0))>0){
+			dm=(struct enc_msg*)m.payload;
+			if(type==m.type)
+				contFlag=1;
+			
+			if(dm==msg){
+
+			type=CONN_AUTH_SUCCESS;
+			m.type=type;
+
+			strcpy(m.payload, "AUTH Success");
+
+			memcpy(buffer, (void*)&m, sizeof(m));
+
+			if((bytes= send(sd2, buffer, 36, 0))>0);
+				//printf("bytes sent %d", bytes);
+			}
+		break;
+
+	}
+
+	counter++;
+
+	goto l;
+	
 	close(sockid);
 	close(sd2);	
 }

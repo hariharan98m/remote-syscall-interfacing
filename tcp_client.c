@@ -7,15 +7,13 @@
 #include<netinet/in.h>
 #include "rsa_secrets.h"
 
-enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8};
+enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12};
 
 enum message_type type;
 
 struct test{
 	int a,b;
 	char str[30];
-
-
 };
 
 struct message{
@@ -24,8 +22,8 @@ struct message{
 };
 
 struct keys{
-	long int n;
-	int phi;
+	double N;
+	double PHI;
 };
 
 typedef struct handshake{
@@ -34,6 +32,14 @@ typedef struct handshake{
 	int cipher_suite;
 	int algorithm;
 }handshake;
+
+
+typedef struct enc_msg{
+
+	double enc;
+
+}enc_msg;
+
 
 handshake create_handshake(){
 	handshake hs;
@@ -45,8 +51,6 @@ handshake create_handshake(){
 	hs.algorithm=type;
 	return hs;
 }
-
-
 
 void error(const char* err){
 	printf("%s", err);
@@ -81,33 +85,109 @@ int main(){
 
 	char buffer[256];
 	struct test t;
-	struct message m;
+	struct message m,m2;
 	handshake fhs;
-	
+	struct keys k;
+	int counter=0;
+	int bytes=0, contFlag=0;
+
+	enc_msg *em;
+
 	l:
 
-	type=HANDSHAKE;	
-	m.type=type;
-	fhs= create_handshake();
+	switch(counter){
 
-	memcpy((void*)m.payload, (void*)&fhs, sizeof(fhs));	
-	memcpy(buffer, (void*)&m, sizeof(m));	
+	case 0 :  //SIP handshake
 
-	if(send(sockid, buffer, sizeof(buffer), 0)>0)
-		;
+		type=HANDSHAKE;	
+		m.type=type;
+		fhs= create_handshake();
+
+		memcpy((void*)m.payload, (void*)&fhs, sizeof(fhs));	
+		memcpy(buffer, (void*)&m, sizeof(m));	
+
+		if((bytes= send(sockid, buffer, 36, 0))>0);
+			//printf("bytes sent %d",bytes);
 	
-	if(recv(sockid, (char*)&m, sizeof(m), 0)){
+		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
+			//printf("bytes recv %d",bytes);
+			printf("\nServer: %s", m.payload);
 
-		printf("\nServer: %s", m.payload);
-	}
+			type= REQ_CERTIFICATE;
 
-	type= REQ_CERTIFICATE;
-	if(m.type== REQ_CERTIFICATE){
+			if(m.type==type)
+				contFlag=1;
+		}
+		break;
+	
+	case 1:
 		
-	}
-	
-//	goto l;
+		type=RES_CERTIFICATE;
+		m.type=type;
 
+		k.N= n;
+		k.PHI= phi;
+
+		memcpy((void*)m.payload, (void*)&k, sizeof(k));	
+		memcpy(buffer, (void*)&m, sizeof(m));	
+
+		if((bytes= send(sockid, buffer, 36, 0))>0);
+			//printf("bytes sent %d",bytes);
+
+		type=KEYS_SAVED;
+		
+		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
+			if(m.type==type){			
+				//printf("bytes recv %d",bytes);
+				printf("\nServer: %s", m.payload);
+			}
+		}
+		
+	break;
+
+	case 2:
+
+		
+		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
+			//printf("bytes recv %d",bytes);
+			//printf("\nServer: %s", m.payload);
+			em= (enc_msg*)m.payload;
+			printf("\nENC msg: %lf\ne= %lf\n", em->enc, em->e);
+
+			type= ENC_MSG;
+			if(m.type==type)
+				contFlag=1;
+
+			int k = 2;  // A constant value
+			double d = (1 + (k*phi))/em->e;
+ 
+			double m = pow(c, d);
+			m = fmod(m, n);
+			
+			type= DECR_MSG;
+			m.type=type;
+
+			memcpy((void*)m.payload, (void*)&k, sizeof(k));	
+			memcpy(buffer, (void*)&m, sizeof(m));	
+
+			if((bytes= send(sockid, buffer, 36, 0))>0);
+				//printf("bytes sent %d",bytes);
+		}
+		
+		
+
+		break;		
+
+	case 3:
 	
+
+
+
+
+	}	
+	counter++;
+
+	goto l;	
+
 	close(sockid);
 }
