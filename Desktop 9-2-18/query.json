@@ -1,0 +1,10 @@
+{		
+        "data": {
+            "title": "Curl testing2",
+            "content": "Dance club message",
+            "channel":"ch1"
+	"event_name":"Show",
+	"event_url":"https://www.google.com/"
+        },
+        "to": "/topics/ch1"
+}

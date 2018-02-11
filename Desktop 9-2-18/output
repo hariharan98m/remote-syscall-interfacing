@@ -1,0 +1,158 @@
+hariharan@hariharan-virtual-machine ~/Desktop $ gcc crc.c
+hariharan@hariharan-virtual-machine ~/Desktop $ ./a.out
+Enter num of Characters in message:3
+Enter dataword STRING:crc
+
+Character c: ASCII 99
+Bin Val: 
+01100011
+binArr: 
+Character r: ASCII 114
+Bin Val: 
+01110010
+binArr: 
+Character c: ASCII 99
+Bin Val: 
+01100011
+binArr: 
+DataWord: 
+011000110111001001100011000000000000
+Enter Generator polynomial:1
+0
+0
+0
+1
+0
+0
+1
+0
+1
+0
+0
+0
+Gen polynomial: 
+1000100101000
+Before Starting: Div= 
+0110001101110
+Step: 0
+Before XOR, Div= 
+0110001101110
+After XOR: New Div= 
+1100011011100
+Step: 1
+Before XOR, Div= 
+1100011011100
+After XOR: New Div= 
+1001111101001
+Step: 2
+Before XOR, Div= 
+1001111101001
+After XOR: New Div= 
+0010110000010
+Step: 3
+Before XOR, Div= 
+0010110000010
+After XOR: New Div= 
+0101100000100
+Step: 4
+Before XOR, Div= 
+0101100000100
+After XOR: New Div= 
+1011000001001
+Step: 5
+Before XOR, Div= 
+1011000001001
+After XOR: New Div= 
+0111001000011
+Step: 6
+Before XOR, Div= 
+0111001000011
+After XOR: New Div= 
+1110010000110
+Step: 7
+Before XOR, Div= 
+1110010000110
+After XOR: New Div= 
+1101101011100
+Step: 8
+Before XOR, Div= 
+1101101011100
+After XOR: New Div= 
+1010011101000
+Step: 9
+Before XOR, Div= 
+1010011101000
+After XOR: New Div= 
+0101110000001
+Step: 10
+Before XOR, Div= 
+0101110000001
+After XOR: New Div= 
+1011100000011
+Step: 11
+Before XOR, Div= 
+1011100000011
+After XOR: New Div= 
+0110001010110
+Step: 12
+Before XOR, Div= 
+0110001010110
+After XOR: New Div= 
+1100010101100
+Step: 13
+Before XOR, Div= 
+1100010101100
+After XOR: New Div= 
+1001100001000
+Step: 14
+Before XOR, Div= 
+1001100001000
+After XOR: New Div= 
+0010001000000
+Step: 15
+Before XOR, Div= 
+0010001000000
+After XOR: New Div= 
+0100010000000
+Step: 16
+Before XOR, Div= 
+0100010000000
+After XOR: New Div= 
+1000100000000
+Step: 17
+Before XOR, Div= 
+1000100000000
+After XOR: New Div= 
+0000001010000
+Step: 18
+Before XOR, Div= 
+0000001010000
+After XOR: New Div= 
+0000010100000
+Step: 19
+Before XOR, Div= 
+0000010100000
+After XOR: New Div= 
+0000101000000
+Step: 20
+Before XOR, Div= 
+0000101000000
+After XOR: New Div= 
+0001010000000
+Step: 21
+Before XOR, Div= 
+0001010000000
+After XOR: New Div= 
+0010100000000
+Step: 22
+Before XOR, Div= 
+0010100000000
+After XOR: New Div= 
+0101000000000
+Step: 23
+Before XOR, Div= 
+0101000000000
+After XOR: New Div= 
+1010000000000
+Resultant CRC word:101000000000Resultant Encoded Data word:011000110111001001100011101000000000
+As String: 011000110111001001100011101000000000

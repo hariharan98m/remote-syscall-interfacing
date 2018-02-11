@@ -1,0 +1,2 @@
+curl -d "@query.json" -X POST -H "Content-Type: application/json" -H "Authorization: key= AAAAXUgGyBc:APA91bGoN3Z78BAFJbKbdCb4tvA69iOcjcFIbEaxxAgppR9bVvEo925VMglhMaIxJ7aE69tTA3IlwHYHdUkSiYscn7wcjLsUH5QBsH1UWkmjEzZ9SIQwOzV7ODfEvgRWhBRyCpdD2sDZ" "https://fcm.googleapis.com/fcm/send"
+
