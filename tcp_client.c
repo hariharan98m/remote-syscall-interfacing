@@ -9,7 +9,7 @@
 #include<math.h>
 
 
-enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
+enum message_type {b=4, SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
 
 enum message_type type;
 
@@ -18,9 +18,17 @@ struct test{
 	char str[30];
 };
 
+typedef struct DHkeys{
+	long int P;
+}DHkeys;
+
+
 struct message{
 	int type;
 	char payload[30];
+	char sessionToken[30];
+	long int pubKey;
+
 };
 
 struct keys{
@@ -116,6 +124,8 @@ int main(){
 	int bytes=0, contFlag=0;
 	user u;
 	enc_msg *em, dm;
+	long int P, G;
+
 
 	l:
 
@@ -234,7 +244,7 @@ int main(){
 			if(m.type==type){			
 				//printf("bytes recv %d",bytes);
 				printf("\nServer: %s", m.payload);
-				strcpy(sessionToken, m.payload);
+				strcpy(sessionToken, m.sessionToken);
 				contFlag=1;
 			}
 		}
@@ -250,10 +260,11 @@ int main(){
 		if((bytes= send(sockid, buffer, 36, 0))>0);
 			//printf("bytes sent %d",bytes);
 	
-		if((bytes=recv(sockid, (char*)&m, sizeof(m), 0))>0){
-			//printf("bytes recv %d",bytes);
-			printf("\nServer: %s", m.payload);
-
+		if((bytes=recv(sockid, (char*)&m, 36, 0))>0){
+			printf("bytes recv %d",bytes);
+			DHkeys *dhk=(DHkeys*)m.payload;
+			printf("\nP: %ld", dhk->P);
+			P=dhk->P;
 			type= OK;
 
 			if(m.type==type)
@@ -261,8 +272,13 @@ int main(){
 		}
 
 
+//	send_message()
 
 
+
+//	Create message
+	m.pubKey=b;
+	strcpy(m.text, '');
 
 
 

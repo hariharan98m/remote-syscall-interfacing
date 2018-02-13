@@ -6,7 +6,7 @@
 #include<time.h>
 #include<netinet/in.h>
 #include<math.h>
-
+#include "deSecrets.h"
 double e=2;
  
 // Returns gcd of a and b
@@ -23,7 +23,7 @@ int gcd(int a, int h)
     }
 }
 
-enum message_type {SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
+enum message_type {a=3, SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
 
 enum message_type type;
 
@@ -36,6 +36,7 @@ struct message{
 	int type;
 	char payload[30];
 	char sessionToken[30];
+	long int pubKey;
 };
 
 
@@ -61,6 +62,12 @@ typedef struct enc_msg{
 	double e;
 
 }enc_msg;
+
+typedef struct DHkeys{
+	long int P;
+
+}DHkeys;
+
 
 
 struct keys{
@@ -115,6 +122,7 @@ int main(){
 //	struct test *t;
 	struct handshake *fhs;
 	struct keys *k;
+	DHkeys dhk;
 	int counter=0;
 	int bytes=0;
 	int contFlag=0;
@@ -264,11 +272,12 @@ int main(){
 		if(fhs->algorithm==type){
 
 			m.type=OK;
-			strcpy(m.payload, "Into the DE en&de mode $");
-
+			dhk.P=p;
+			printf("Keys P= %ld", dhk.P);
+			memcpy(m.payload, (void*)&dhk, sizeof(dhk));			
 			memcpy(buffer, (void*)&m, sizeof(m));
-			if((bytes= send(sd2, buffer, 36, 0))>0);
-				//printf("bytes sent %d", bytes);
+			if((bytes= send(sd2, buffer, 36, 0))>0)
+				printf("bytes sent %d", bytes);
 		}
 
 
