@@ -7,6 +7,7 @@
 #include<netinet/in.h>
 #include<math.h>
 #include "deSecrets.h"
+
 double e=2;
  
 // Returns gcd of a and b
@@ -23,7 +24,7 @@ int gcd(int a, int h)
     }
 }
 
-enum message_type {a=3, SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
+enum message_type {a=3, SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15, MSG_TYPE=16};
 
 enum message_type type;
 
@@ -36,7 +37,7 @@ struct message{
 	int type;
 	char payload[30];
 	char sessionToken[30];
-	long int pubKey;
+	int size;
 };
 
 
@@ -46,6 +47,11 @@ typedef struct user{
 	long int sessionToken;
 	int privLevel;
 }user;
+
+
+typedef struct encDecMsg{
+	int cmd[20];
+}encDecMsg;
 
 
 typedef struct handshake{
@@ -79,6 +85,22 @@ struct keys{
 void error(const char* err){
 	printf("%s", err);
 	exit(0);
+}
+
+
+char ascii_val(int c){
+	return (char)(c);
+}
+
+
+int power(long int a, long int b,
+                                     long int P)
+{ 
+    if (b == 1)
+        return a;
+ 
+    else
+        return (int)(((long int)pow(a, b)) % P);
 }
 
 int main(){
@@ -283,6 +305,27 @@ int main(){
 
 //		break;
 
+//	case 
+
+		if((bytes= recv(sd2, (char*)&m, 36, 0))>0){
+
+			encDecMsg* MSG=(encDecMsg*)m.payload;
+			type=MSG_TYPE;		
+
+			char buff[35];
+			strcpy(buff, "");
+			printf("m.size %d", m.size);
+
+			int i=0;
+			if(m.type==type){
+				for(i=0;i<2;i++){
+					printf("num at %d = %d",i, MSG->cmd[i]);
+					printf("ASCII at %d is %d", i, power(MSG->cmd[i], B, p));
+				}				
+			}
+		
+		}
+
 
 //	counter++;
 
@@ -291,3 +334,4 @@ int main(){
 	close(sockid);
 	close(sd2);	
 }
+

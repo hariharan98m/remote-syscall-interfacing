@@ -8,8 +8,10 @@
 #include "rsa_secrets.h"
 #include<math.h>
 
+long int P;
 
-enum message_type {b=4, SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15};
+
+enum message_type {b=4, SUCCESS=20, FAILURE=30, SIP=1, ASYMMETRIC= 2, SYMMETRIC=3, RSA=4, DE=5, HANDSHAKE=6, REQ_CERTIFICATE=7, RES_CERTIFICATE=8, KEYS_SAVED=9, ENC_MSG=10, DECR_MSG=11, CONN_AUTH_SUCCESS=12, SESSION_TOKEN_SENT=13, USER_INFO=14, OK=15, MSG_TYPE=16};
 
 enum message_type type;
 
@@ -27,7 +29,7 @@ struct message{
 	int type;
 	char payload[30];
 	char sessionToken[30];
-	long int pubKey;
+	int size;
 
 };
 
@@ -51,6 +53,9 @@ typedef struct user{
 	int privLevel;
 }user;
 
+typedef struct encDecMsg{
+	int cmd[20];
+}encDecMsg;
 
 
 typedef struct enc_msg{
@@ -88,6 +93,27 @@ void error(const char* err){
 	printf("%s", err);
 	exit(0);
 }
+
+
+int ascii_val(char c){
+	return (long int)c;
+
+}
+
+
+int power(long int a, long int b,
+                                     long int P)
+{ 
+    if (b == 1)
+        return a;
+ 
+    else
+        return (int)(((long int)pow(a, b)) % P);
+}
+
+
+
+
 
 int main(){
 
@@ -277,10 +303,29 @@ int main(){
 
 
 //	Create message
-	m.pubKey=b;
-	strcpy(m.text, '');
+	type=MSG_TYPE;
+	m.type=type;
 
+	m.size=2;
 
+	strcpy(buffer, "hi");
+
+	encDecMsg edm;
+
+	int i=0;
+	for(i=0;i<strlen(buffer);i++){
+		edm.cmd[i]=power(ascii_val(buffer[i]), A, P);	
+		printf("msg[i] %d\n", edm.cmd[i]);
+	}
+
+	memcpy((void*)m.payload, (void*)&edm, sizeof(edm));
+	memcpy(buffer, (void*)&m, sizeof(m));
+
+	if((bytes=send(sockid, buffer, 36, 0))>0){
+		printf("bytes sent %d",bytes);
+		if(m.type==type)
+			contFlag=1;
+	}
 
 
 
@@ -291,3 +336,4 @@ int main(){
 
 	close(sockid);
 }
+
